@@ -11,12 +11,10 @@ import javax.validation.constraints.Size;
 @Getter
 public class UserDto {
 
-    @NotBlank
-    @Size(min = 4, max = 30)
+    @Size(min = 4, max = 30, message = "username length must be between {min} and {max} characters")
     private String userName;
 
-    @NotBlank
-    @Size(min = 8, max = 30)
+    @Size(min = 8, max = 30, message = "password length must be between {min} and {max} characters")
     private String password;
 
     @JsonCreator
