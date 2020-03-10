@@ -54,8 +54,7 @@ public class AuthenticationServiceBean implements AuthenticationService {
         );
     }
 
-    private boolean isPasswordMatchEncoded(String inputPassword, String encryptedPassword, PasswordEncoder passwordEncoder) {
-        String encodedInputPassword = passwordEncoder.encode(inputPassword);
-        return encodedInputPassword.equals(encryptedPassword);
+    private boolean isPasswordMatchEncoded(String inputPassword, String encodedPassword, PasswordEncoder passwordEncoder) {
+        return passwordEncoder.matches(inputPassword, encodedPassword);
     }
 }

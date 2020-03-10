@@ -10,8 +10,6 @@ spring:
       ddl-auto: update
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 server:
-  servlet:
-    context-path: /api
   error:
     include-stacktrace: never
 logging:

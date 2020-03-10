@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 public class AuthInterceptor implements ChannelInterceptor {
 
     private static final String USERNAME_HEADER = "login";
-    private static final String PASSWORD_HEADER = "passcode";
+    private static final String PASSWORD_HEADER = "password";
 
     private final AuthenticationService authenticationService;
 

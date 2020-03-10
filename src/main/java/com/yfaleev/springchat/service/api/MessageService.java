@@ -7,4 +7,5 @@ public interface MessageService {
 
     Message save(Message message, UserPrincipal sender);
 
+    Iterable<Message> findAllWithUsers();
 }

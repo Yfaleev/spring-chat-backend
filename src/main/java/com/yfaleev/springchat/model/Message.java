@@ -8,12 +8,20 @@ import org.springframework.data.annotation.CreatedDate;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
+@NamedEntityGraph(
+        name = Message.GRAPH_USER,
+        attributeNodes = {
+                @NamedAttributeNode(value = "user"),
+        }
+)
 @Entity
 @Table(name = "MESSAGE")
 @Getter
 @Setter
 @NoArgsConstructor
 public class Message {
+
+    public static final String GRAPH_USER = "Message.user";
 
     @Id
     @Column(name = "MESSAGE_ID")

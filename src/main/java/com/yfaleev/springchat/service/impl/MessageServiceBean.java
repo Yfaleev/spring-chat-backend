@@ -1,5 +1,6 @@
 package com.yfaleev.springchat.service.impl;
 
+import com.cosium.spring.data.jpa.entity.graph.domain.EntityGraphs;
 import com.yfaleev.springchat.model.Message;
 import com.yfaleev.springchat.model.User;
 import com.yfaleev.springchat.model.notEntityModel.UserPrincipal;
@@ -32,5 +33,10 @@ public class MessageServiceBean implements MessageService {
         message.setSendDate(LocalDateTime.now());
 
         return messageRepository.save(message);
+    }
+
+    @Override
+    public Iterable<Message> findAllWithUsers() {
+        return messageRepository.findAll(EntityGraphs.named(Message.GRAPH_USER));
     }
 }
