@@ -11,6 +11,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.messaging.simp.user.SimpUser;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -64,8 +65,8 @@ public class ChatController {
         );
     }
 
-    @MessageMapping("/chat.messageHistory")
-    public void showMessageHistory(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+    @SubscribeMapping("/chat.messageHistory")
+    public ChatMessageHistoryDto showMessageHistory() {
         Iterable<Message> allMessages = messageService.findAllWithUsers();
 
         List<ChatMessageDto> chatMessages = StreamSupport
@@ -77,10 +78,6 @@ public class ChatController {
                         message.getSendDate().format(DateTimeFormatter.ofPattern(DateTimeFormat.DATE_WITH_TIME))
                 )).collect(Collectors.toList());
 
-        simpMessagingTemplate.convertAndSendToUser(
-                userPrincipal.getUsername(),
-                "/queue/messageHistory",
-                new ChatMessageHistoryDto(chatMessages)
-        );
+        return new ChatMessageHistoryDto(chatMessages);
     }
 }
