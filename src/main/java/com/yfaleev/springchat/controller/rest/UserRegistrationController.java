@@ -1,15 +1,19 @@
 package com.yfaleev.springchat.controller.rest;
 
+import com.yfaleev.springchat.dto.ApiResponse;
 import com.yfaleev.springchat.dto.UserDto;
-import com.yfaleev.springchat.exception.BadRequestException;
 import com.yfaleev.springchat.model.User;
 import com.yfaleev.springchat.service.api.UserService;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.util.Collections;
 
 @RestController
 @RequestMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -25,10 +29,11 @@ public class UserRegistrationController {
     }
 
     @PostMapping("/users")
-    @ResponseStatus(HttpStatus.CREATED)
-    public void registerUser(@Valid @RequestBody UserDto userDto) {
+    public ResponseEntity<ApiResponse> registerUser(@Valid @RequestBody UserDto userDto) {
         if (userService.existsByUserName(userDto.getUserName())) {
-            throw new BadRequestException("Username already in use!");
+            return ResponseEntity
+                    .badRequest()
+                    .body(new ApiResponse(false, Collections.singletonList("Username already in use!")));
         }
 
         userService.save(
@@ -37,5 +42,7 @@ public class UserRegistrationController {
                         passwordEncoder.encode(userDto.getPassword())
                 )
         );
+
+        return ResponseEntity.ok(new ApiResponse(true));
     }
 }

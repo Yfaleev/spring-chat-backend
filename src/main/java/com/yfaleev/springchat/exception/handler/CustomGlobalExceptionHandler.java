@@ -1,5 +1,6 @@
 package com.yfaleev.springchat.exception.handler;
 
+import com.yfaleev.springchat.dto.ApiResponse;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -22,7 +23,11 @@ public class CustomGlobalExceptionHandler extends ResponseEntityExceptionHandler
             HttpHeaders headers,
             HttpStatus status,
             WebRequest request) {
-        return new ResponseEntity<>(getErrorList(ex.getBindingResult()), headers, status);
+        return new ResponseEntity<>(
+                new ApiResponse(false, getErrorList(ex.getBindingResult())),
+                headers,
+                status
+        );
     }
 
     private List<String> getErrorList(BindingResult bindingResult) {

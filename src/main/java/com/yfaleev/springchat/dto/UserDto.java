@@ -1,11 +1,9 @@
 package com.yfaleev.springchat.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
 @Getter
@@ -18,7 +16,7 @@ public class UserDto {
     private String password;
 
     @JsonCreator
-    public UserDto(String userName, String password) {
+    public UserDto(@JsonProperty("userName") String userName, @JsonProperty("password") String password) {
         this.userName = userName;
         this.password = password;
     }

@@ -14,6 +14,6 @@ public class WebSocketAuthorizationSecurityConfig extends AbstractSecurityWebSoc
 
     @Override
     protected boolean sameOriginDisabled() {
-        return true; // TODO
+        return true;
     }
 }
