@@ -1,4 +1,4 @@
-package com.yfaleev.springchat.websocket.interceptor.event;
+package com.yfaleev.springchat.websocket.event;
 
 import com.yfaleev.springchat.dto.ChatMessageDto;
 import lombok.extern.slf4j.Slf4j;
