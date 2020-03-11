@@ -1,17 +1,15 @@
 package com.yfaleev.springchat.dto;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.yfaleev.springchat.dto.format.DateTimeFormat;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
 public class ChatMessageDto {
 
     public static final String SYSTEM_SENDER_NAME = "SYSTEM";
@@ -36,5 +34,17 @@ public class ChatMessageDto {
                 sender,
                 LocalDateTime.now().format(DateTimeFormatter.ofPattern(DateTimeFormat.DATE_WITH_TIME))
         );
+    }
+
+    @JsonCreator
+    public ChatMessageDto(
+            @JsonProperty("messageType") ChatMessageType messageType,
+            @JsonProperty("messageText") String messageText,
+            @JsonProperty("sender") String sender,
+            @JsonProperty("sendDate") String sendDate) {
+        this.messageType = messageType;
+        this.messageText = messageText;
+        this.sender = sender;
+        this.sendDate = sendDate;
     }
 }

@@ -1,4 +1,4 @@
-package com.yfaleev.springchat.dto;
+package com.yfaleev.springchat.dto.format;
 
 public final class DateTimeFormat {
 

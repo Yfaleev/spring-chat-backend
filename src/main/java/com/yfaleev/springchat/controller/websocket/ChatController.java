@@ -3,7 +3,7 @@ package com.yfaleev.springchat.controller.websocket;
 import com.yfaleev.springchat.dto.ChatMessageDto;
 import com.yfaleev.springchat.dto.ChatMessageHistoryDto;
 import com.yfaleev.springchat.dto.ChatUsersNamesDto;
-import com.yfaleev.springchat.dto.DateTimeFormat;
+import com.yfaleev.springchat.dto.format.DateTimeFormat;
 import com.yfaleev.springchat.model.Message;
 import com.yfaleev.springchat.model.notEntityModel.UserPrincipal;
 import com.yfaleev.springchat.service.api.MessageService;
@@ -29,12 +29,9 @@ public class ChatController {
 
     private final SimpUserRegistry userRegistry;
 
-    private final SimpMessagingTemplate simpMessagingTemplate;
-
     public ChatController(MessageService messageService, SimpUserRegistry userRegistry, SimpMessagingTemplate simpMessagingTemplate) {
         this.messageService = messageService;
         this.userRegistry = userRegistry;
-        this.simpMessagingTemplate = simpMessagingTemplate;
     }
 
     @MessageMapping("/chat.sendMessage")
@@ -52,17 +49,13 @@ public class ChatController {
         );
     }
 
-    @MessageMapping("/chat.activeUsers")
-    public void showActiveUsers(@AuthenticationPrincipal UserPrincipal userPrincipal) {
+    @SubscribeMapping("/chat.activeUsers")
+    public ChatUsersNamesDto showActiveUsers() {
         List<String> userNames = userRegistry.getUsers().stream()
                 .map(SimpUser::getName)
                 .collect(Collectors.toList());
 
-        simpMessagingTemplate.convertAndSendToUser(
-                userPrincipal.getUsername(),
-                "/queue/activeUsers",
-                new ChatUsersNamesDto(userNames)
-        );
+        return new ChatUsersNamesDto(userNames);
     }
 
     @SubscribeMapping("/chat.messageHistory")

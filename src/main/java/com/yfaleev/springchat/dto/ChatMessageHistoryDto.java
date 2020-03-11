@@ -1,18 +1,16 @@
 package com.yfaleev.springchat.dto;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.util.List;
 
 @Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
 public class ChatMessageHistoryDto {
 
     private List<ChatMessageDto> chatMessages;
 
+    public ChatMessageHistoryDto(@JsonProperty("chatMessages") List<ChatMessageDto> chatMessages) {
+        this.chatMessages = chatMessages;
+    }
 }
