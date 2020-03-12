@@ -37,10 +37,7 @@ public class UserRegistrationController {
         }
 
         userService.save(
-                new User(
-                        userDto.getUserName(),
-                        passwordEncoder.encode(userDto.getPassword())
-                )
+                new User(userDto.getUserName(), passwordEncoder.encode(userDto.getPassword()))
         );
 
         return ResponseEntity.ok(new ApiResponse(true));

@@ -43,7 +43,7 @@ public class AuthenticationServiceBean implements AuthenticationService {
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-        if (!isPasswordMatchEncoded(password, userDetails.getPassword(), passwordEncoder)) {
+        if (!passwordEncoder.matches(password, userDetails.getPassword())) {
             throw new BadCredentialsException(String.format(BAD_CREDENTIALS, username));
         }
 
@@ -52,9 +52,5 @@ public class AuthenticationServiceBean implements AuthenticationService {
                 null,
                 userDetails.getAuthorities()
         );
-    }
-
-    private boolean isPasswordMatchEncoded(String inputPassword, String encodedPassword, PasswordEncoder passwordEncoder) {
-        return passwordEncoder.matches(inputPassword, encodedPassword);
     }
 }
