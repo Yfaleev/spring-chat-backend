@@ -29,7 +29,7 @@ public class ChatController {
 
     private final SimpUserRegistry userRegistry;
 
-    public ChatController(MessageService messageService, SimpUserRegistry userRegistry, SimpMessagingTemplate simpMessagingTemplate) {
+    public ChatController(MessageService messageService, SimpUserRegistry userRegistry) {
         this.messageService = messageService;
         this.userRegistry = userRegistry;
     }
