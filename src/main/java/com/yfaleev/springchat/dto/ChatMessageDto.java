@@ -2,12 +2,7 @@ package com.yfaleev.springchat.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.yfaleev.springchat.dto.format.DateTimeFormat;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Getter
 public class ChatMessageDto {
@@ -28,12 +23,8 @@ public class ChatMessageDto {
 
     private String sendDate;
 
-    public ChatMessageDto(ChatMessageType messageType, String messageText, String sender) {
-        this(messageType,
-                messageText,
-                sender,
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern(DateTimeFormat.DATE_WITH_TIME))
-        );
+    public ChatMessageDto(String messageText) {
+        this.messageText = messageText;
     }
 
     @JsonCreator
