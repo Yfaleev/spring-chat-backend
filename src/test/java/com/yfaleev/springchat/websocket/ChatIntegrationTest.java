@@ -9,13 +9,16 @@ import com.yfaleev.springchat.model.User;
 import com.yfaleev.springchat.model.notEntityModel.UserPrincipal;
 import com.yfaleev.springchat.service.api.AuthenticationService;
 import com.yfaleev.springchat.service.api.MessageService;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.stomp.*;
 import org.springframework.messaging.simp.user.SimpUser;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
@@ -34,14 +37,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeoutException;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Slf4j
 public class ChatIntegrationTest {
 
     public static final String ACTIVE_USERS_DESTINATION = "/app/chat.activeUsers";
@@ -67,6 +73,9 @@ public class ChatIntegrationTest {
     private LocalDateTimeFormatter dateTimeFormatter;
     @MockBean
     private SimpUserRegistry simpUserRegistry;
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     private String username = "username";
     private String password = "password";
@@ -101,7 +110,7 @@ public class ChatIntegrationTest {
         when(authenticationService.getAuthenticationToken(anyString(), anyString())).thenThrow(BadCredentialsException.class);
 
         try {
-            connectWithAuthHeaders();
+            connectWithAuthHeaders(username, password);
             fail();
         } catch (ExecutionException e) {
             assertThat(e).hasCauseExactlyInstanceOf(ConnectionLostException.class);
@@ -112,7 +121,7 @@ public class ChatIntegrationTest {
     public void whenAttemptConnectionWithCorrectCredentials_ThenSuccessConnection() throws Exception {
         when(authenticationService.getAuthenticationToken(username, password)).thenReturn(token);
 
-        StompSession stompSession = connectWithAuthHeaders();
+        StompSession stompSession = connectWithAuthHeaders(username, password);
 
         assertTrue(stompSession.isConnected());
     }
@@ -140,7 +149,7 @@ public class ChatIntegrationTest {
         String dateAsString = "now";
         when(dateTimeFormatter.format(now)).thenReturn(dateAsString);
 
-        StompSession stompSession = connectWithAuthHeaders();
+        StompSession stompSession = connectWithAuthHeaders(username, password);
         stompSession.subscribe(CHAT_BROKER, new BlockingQueueOfferingFrameHandler<>(ChatMessageDto.class));
 
         stompSession.send(CHAT_DESTINATION, messageDto);
@@ -171,7 +180,7 @@ public class ChatIntegrationTest {
         when(authenticationService.getAuthenticationToken(username, password)).thenReturn(token);
         when(simpUserRegistry.getUsers()).thenReturn(simpUserMocks);
 
-        StompSession stompSession = connectWithAuthHeaders();
+        StompSession stompSession = connectWithAuthHeaders(username, password);
         stompSession.subscribe(ACTIVE_USERS_DESTINATION, new BlockingQueueOfferingFrameHandler<>(ChatUsersNamesDto.class));
 
         ChatUsersNamesDto chatUsersNamesDto = pollAndAssertInstance(ChatUsersNamesDto.class);
@@ -219,7 +228,7 @@ public class ChatIntegrationTest {
         String dateAsString = "now";
         when(dateTimeFormatter.format(now)).thenReturn(dateAsString);
 
-        StompSession stompSession = connectWithAuthHeaders();
+        StompSession stompSession = connectWithAuthHeaders(username, password);
         stompSession.subscribe(MESSAGE_HISTORY_DESTINATION, new BlockingQueueOfferingFrameHandler<>(ChatMessageHistoryDto.class));
 
         ChatMessageHistoryDto chatMessageHistoryDto = pollAndAssertInstance(ChatMessageHistoryDto.class);
@@ -241,13 +250,88 @@ public class ChatIntegrationTest {
         assertTrue(chatMessages.stream().anyMatch(msg -> message2.getUser().getUsername().equals(msg.getSender())));
     }
 
+    @Test
+    public void whenNewUserConnected_ThenReceiveUserConnectionNotificationMessage() throws Exception {
+        UserDetails anotherUserDetails = UserPrincipal
+                .builder()
+                .id(2L)
+                .authorities(Collections.emptyList())
+                .password("password2")
+                .username("username2")
+                .build();
+
+        UsernamePasswordAuthenticationToken anotherToken = new UsernamePasswordAuthenticationToken(
+                anotherUserDetails,
+                null,
+                anotherUserDetails.getAuthorities()
+        );
+
+        when(authenticationService.getAuthenticationToken(username, password)).thenReturn(token);
+        when(authenticationService.getAuthenticationToken(anotherUserDetails.getUsername(), anotherUserDetails.getPassword()))
+                .thenReturn(anotherToken);
+
+        StompSession firstSession = connectWithAuthHeaders(username, password);
+        firstSession.subscribe(CHAT_BROKER, new BlockingQueueOfferingFrameHandler<>(ChatMessageDto.class));
+
+        await().until(this::isSubscribedToChatBroker);
+
+        connectWithAuthHeaders(anotherUserDetails.getUsername(), anotherUserDetails.getPassword());
+
+        ChatMessageDto userConnectedMessageDto = pollAndAssertInstance(ChatMessageDto.class);
+
+        assertNotNull(userConnectedMessageDto);
+        assertNotNull(userConnectedMessageDto.getMessageText());
+        assertEquals(ChatMessageDto.ChatMessageType.JOIN, userConnectedMessageDto.getMessageType());
+        assertEquals(ChatMessageDto.SYSTEM_SENDER_NAME, userConnectedMessageDto.getSender());
+        assertThat(userConnectedMessageDto.getMessageText()).contains(anotherUserDetails.getUsername());
+    }
+
+    @Test
+    public void whenUserDisconnected_ThenReceiveUserDisconnectionNotificationMessage() throws Exception {
+        UserDetails anotherUserDetails = UserPrincipal
+                .builder()
+                .id(2L)
+                .authorities(Collections.emptyList())
+                .password("password2")
+                .username("username2")
+                .build();
+
+        UsernamePasswordAuthenticationToken anotherToken = new UsernamePasswordAuthenticationToken(
+                anotherUserDetails,
+                null,
+                anotherUserDetails.getAuthorities()
+        );
+
+        when(authenticationService.getAuthenticationToken(username, password)).thenReturn(token);
+        when(authenticationService.getAuthenticationToken(anotherUserDetails.getUsername(), anotherUserDetails.getPassword()))
+                .thenReturn(anotherToken);
+
+        StompSession firstSession = connectWithAuthHeaders(username, password);
+        StompSession secondSession = connectWithAuthHeaders(anotherUserDetails.getUsername(), anotherUserDetails.getPassword());
+
+        firstSession.subscribe(CHAT_BROKER, new BlockingQueueOfferingFrameHandler<>(ChatMessageDto.class));
+
+        await().until(this::isSubscribedToChatBroker);
+
+        secondSession.disconnect();
+
+        ChatMessageDto userDisconnectedMessageDto = pollAndAssertInstance(ChatMessageDto.class);
+
+        assertNotNull(userDisconnectedMessageDto);
+        assertNotNull(userDisconnectedMessageDto.getMessageText());
+        assertEquals(ChatMessageDto.ChatMessageType.LEAVE, userDisconnectedMessageDto.getMessageType());
+        assertEquals(ChatMessageDto.SYSTEM_SENDER_NAME, userDisconnectedMessageDto.getSender());
+        assertThat(userDisconnectedMessageDto.getMessageText()).contains(anotherUserDetails.getUsername());
+    }
+
+    @SuppressWarnings("unchecked")
     private <T> T pollAndAssertInstance(Class<T> tClass) throws InterruptedException {
         Object obj = blockingQueue.poll(1, SECONDS);
         assertThat(obj).isInstanceOf(tClass);
         return (T) obj;
     }
 
-    private StompSession connectWithAuthHeaders() throws InterruptedException, ExecutionException, TimeoutException {
+    private StompSession connectWithAuthHeaders(String username, String password) throws InterruptedException, ExecutionException, TimeoutException {
         StompHeaders authHeaders = buildAuthHeaders(username, password);
 
         return stompClient
@@ -265,6 +349,28 @@ public class ChatIntegrationTest {
         authHeaders.add("login", username);
         authHeaders.add("password", password);
         return authHeaders;
+    }
+
+    private boolean isSubscribedToChatBroker() {
+        ChatMessageDto obj = new ChatMessageDto(UUID.randomUUID().toString());
+
+        messagingTemplate.convertAndSend(CHAT_BROKER, obj);
+
+        ChatMessageDto response = null;
+        try {
+            response = (ChatMessageDto) blockingQueue.poll(20, MILLISECONDS);
+
+            // drain the message queue before returning true
+            while (response != null && !obj.getMessageText().equals(response.getMessageText())) {
+                log.debug("Draining message queue");
+                response = (ChatMessageDto) blockingQueue.poll(20, MILLISECONDS);
+            }
+
+        } catch (InterruptedException e) {
+            log.debug("Polling received messages interrupted", e);
+        }
+
+        return response != null;
     }
 
     class BlockingQueueOfferingFrameHandler<PAYLOAD_TYPE> implements StompFrameHandler {
