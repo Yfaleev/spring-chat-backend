@@ -94,6 +94,8 @@ public class UserRegistrationControllerIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value("false"))
                 .andExpect(jsonPath("$.errors", hasSize(2)));
+
+        verifyNoMoreInteractions(userService, passwordEncoder);
     }
 
     @Test
@@ -109,5 +111,9 @@ public class UserRegistrationControllerIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value("false"))
                 .andExpect(jsonPath("$.errors", hasSize(1)));
+
+        verify(userService, times(1)).existsByUserName(userDto.getUserName());
+
+        verifyNoMoreInteractions(userService, passwordEncoder);
     }
 }

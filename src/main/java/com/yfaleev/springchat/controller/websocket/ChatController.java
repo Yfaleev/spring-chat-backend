@@ -3,21 +3,19 @@ package com.yfaleev.springchat.controller.websocket;
 import com.yfaleev.springchat.dto.ChatMessageDto;
 import com.yfaleev.springchat.dto.ChatMessageHistoryDto;
 import com.yfaleev.springchat.dto.ChatUsersNamesDto;
-import com.yfaleev.springchat.dto.format.DateTimeFormat;
+import com.yfaleev.springchat.format.datetime.api.LocalDateTimeFormatter;
 import com.yfaleev.springchat.model.Message;
 import com.yfaleev.springchat.model.notEntityModel.UserPrincipal;
 import com.yfaleev.springchat.service.api.MessageService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.messaging.simp.user.SimpUser;
 import org.springframework.messaging.simp.user.SimpUserRegistry;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -29,9 +27,12 @@ public class ChatController {
 
     private final SimpUserRegistry userRegistry;
 
-    public ChatController(MessageService messageService, SimpUserRegistry userRegistry) {
+    private final LocalDateTimeFormatter localDateTimeFormatter;
+
+    public ChatController(MessageService messageService, SimpUserRegistry userRegistry, LocalDateTimeFormatter localDateTimeFormatter) {
         this.messageService = messageService;
         this.userRegistry = userRegistry;
+        this.localDateTimeFormatter = localDateTimeFormatter;
     }
 
     @MessageMapping("/chat.sendMessage")
@@ -45,7 +46,7 @@ public class ChatController {
                 ChatMessageDto.ChatMessageType.CHATTING,
                 message.getText(),
                 userPrincipal.getUsername(),
-                message.getSendDate().format(DateTimeFormatter.ofPattern(DateTimeFormat.DATE_WITH_TIME))
+                localDateTimeFormatter.format(message.getSendDate())
         );
     }
 
@@ -68,7 +69,7 @@ public class ChatController {
                         ChatMessageDto.ChatMessageType.CHATTING,
                         message.getText(),
                         message.getUser().getUsername(),
-                        message.getSendDate().format(DateTimeFormatter.ofPattern(DateTimeFormat.DATE_WITH_TIME))
+                        localDateTimeFormatter.format(message.getSendDate())
                 )).collect(Collectors.toList());
 
         return new ChatMessageHistoryDto(chatMessages);

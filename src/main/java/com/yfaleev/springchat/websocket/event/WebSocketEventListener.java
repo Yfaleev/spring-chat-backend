@@ -1,6 +1,7 @@
 package com.yfaleev.springchat.websocket.event;
 
 import com.yfaleev.springchat.dto.ChatMessageDto;
+import com.yfaleev.springchat.format.datetime.api.LocalDateTimeFormatter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.Message;
@@ -11,6 +12,7 @@ import org.springframework.web.socket.messaging.SessionConnectedEvent;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 
 @Component
 @Slf4j
@@ -21,8 +23,11 @@ public class WebSocketEventListener {
 
     private final SimpMessageSendingOperations messagingTemplate;
 
-    public WebSocketEventListener(SimpMessageSendingOperations messagingTemplate) {
+    private final LocalDateTimeFormatter localDateTimeFormatter;
+
+    public WebSocketEventListener(SimpMessageSendingOperations messagingTemplate, LocalDateTimeFormatter localDateTimeFormatter) {
         this.messagingTemplate = messagingTemplate;
+        this.localDateTimeFormatter = localDateTimeFormatter;
     }
 
     @EventListener
@@ -37,7 +42,8 @@ public class WebSocketEventListener {
             ChatMessageDto message = new ChatMessageDto(
                     ChatMessageDto.ChatMessageType.JOIN,
                     userConnectedMessage,
-                    ChatMessageDto.SYSTEM_SENDER_NAME
+                    ChatMessageDto.SYSTEM_SENDER_NAME,
+                    localDateTimeFormatter.format(LocalDateTime.now())
             );
 
             messagingTemplate.convertAndSend("/topic/public", message);
@@ -56,7 +62,8 @@ public class WebSocketEventListener {
             ChatMessageDto message = new ChatMessageDto(
                     ChatMessageDto.ChatMessageType.LEAVE,
                     userDisconnectedMessage,
-                    ChatMessageDto.SYSTEM_SENDER_NAME
+                    ChatMessageDto.SYSTEM_SENDER_NAME,
+                    localDateTimeFormatter.format(LocalDateTime.now())
             );
 
             messagingTemplate.convertAndSend("/topic/public", message);
