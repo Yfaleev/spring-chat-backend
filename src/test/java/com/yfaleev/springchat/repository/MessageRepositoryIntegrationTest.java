@@ -21,9 +21,6 @@ public class MessageRepositoryIntegrationTest {
     @Autowired
     private MessageRepository messageRepository;
 
-    @Autowired
-    private TestEntityManager testEntityManager;
-
     private Message message;
 
     @BeforeEach
