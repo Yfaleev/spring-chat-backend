@@ -41,9 +41,6 @@ public class AuthenticationServiceTest {
 
     private UserDetails principal;
 
-    @Captor
-    private ArgumentCaptor<UserDetails> captor;
-
     @BeforeEach
     public void setUp() {
         principal = UserPrincipal
