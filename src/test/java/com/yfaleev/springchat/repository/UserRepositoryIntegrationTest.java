@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 
-import javax.persistence.PersistenceException;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,19 +36,19 @@ public class UserRepositoryIntegrationTest {
     public void whenUserWithUserNameExists_ThenThrowException() {
         testEntityManager.persistAndFlush(user);
 
-        assertThrows(PersistenceException.class, () -> testEntityManager.persistAndFlush(new User(user.getUsername(), user.getPassword())));
+        assertThrows(DataIntegrityViolationException.class, () -> userRepository.save(new User(user.getUsername(), user.getPassword())));
     }
 
     @Test
     public void whenUsernameIsNull_ThenThrowException() {
         user.setUsername(null);
-        assertThrows(PersistenceException.class, () -> testEntityManager.persistAndFlush(user));
+        assertThrows(DataIntegrityViolationException.class, () -> userRepository.save(user));
     }
 
     @Test
     public void whenPasswordIsNull_ThenThrowException() {
         user.setPassword(null);
-        assertThrows(PersistenceException.class, () -> testEntityManager.persistAndFlush(user));
+        assertThrows(DataIntegrityViolationException.class, () -> userRepository.save(user));
     }
 
     @Test
@@ -76,15 +76,15 @@ public class UserRepositoryIntegrationTest {
     public void whenExistsByUserName_ThenReturnTrue() {
         testEntityManager.persistAndFlush(user);
 
-        boolean actual = userRepository.existsByUsername(user.getUsername());
-        assertThat(actual).isTrue();
+        boolean exists = userRepository.existsByUsername(user.getUsername());
+        assertThat(exists).isTrue();
     }
 
     @Test
     public void whenNotExistsByUserName_ThenReturnFalse() {
         testEntityManager.persistAndFlush(user);
 
-        boolean actual = userRepository.existsByUsername("NOT_EXISTS");
-        assertThat(actual).isFalse();
+        boolean exists = userRepository.existsByUsername("NOT_EXISTS");
+        assertThat(exists).isFalse();
     }
 }
